@@ -78,6 +78,9 @@ class OrderNumber:
 
     @_logger.decorator('markdown, 执行错误')
     def main(self, filepath: str, inplace=False) -> bool:
+        if not os.path.exists(filepath):
+            print('invalid filepath')
+            return False
         new_contents = []
         with open(filepath, mode='r+', encoding='utf-8') as f:
             for line in f.readlines():

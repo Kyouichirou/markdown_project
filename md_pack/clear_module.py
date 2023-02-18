@@ -20,6 +20,7 @@ class Clear:
         self.__blank_reg = re.compile('\s{2,}')
         self.__url_pic_reg = re.compile('\!?\[.+\]\(.+\)')
         self.__blank_times = 0
+        self.__zero_character = chr(8023)
         self.__need_insert = False
         with open(os.path.dirname(__file__) + '\punctuation_mark.txt', mode='r', encoding='utf-8') as f:
             for line in f.readlines():
@@ -48,12 +49,16 @@ class Clear:
         # 检查图片/链接
         return True if self.__url_pic_reg.match(line) else (line.startswith('<') and line.endswith('>'))
 
+    def __clear_zero_character(self, line: str) -> str:
+        # 清理掉隐藏的字符
+        return line.replace(self.__zero_character, '')
+
     def main(self, line: str) -> str:
         self.__need_insert = False
         if tmp := line.strip():
             self.__blank_times = 0
-            return self.__zh_to_en_convertor((line.rstrip() if self.__check_code(
-                tmp) else line.strip() if self.__check_tag_mark(tmp) else self.__clear_tow_blank(tmp)))
+            return self.__zh_to_en_convertor(self.__clear_zero_character((line.rstrip() if self.__check_code(
+                tmp) else line.strip() if self.__check_tag_mark(tmp) else self.__clear_tow_blank(tmp))))
         else:
             if self.__blank_times == 0:
                 self.__blank_times += 1
