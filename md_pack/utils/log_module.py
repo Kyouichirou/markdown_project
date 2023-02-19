@@ -22,7 +22,7 @@ class Logs:
     def __del__(self):
         # 假如没有错误写入内容删掉日这
         if not self.__is_write:
-            time.sleep(0.5)
+            time.sleep(0.1)
             os.remove(self.__path)
             print('no data write to log, delete log file')
 

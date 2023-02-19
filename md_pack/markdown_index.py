@@ -7,7 +7,6 @@ from .clear_module import Clear
 from .utils.log_module import Logs
 from .number_module import NumberChinese as nTc
 
-
 _logger = Logs()
 
 
@@ -16,10 +15,12 @@ class OrderNumber:
         self.__ntc = nTc()
         self.__last_index = 1
         self.__clear = Clear()
-        self.__index_chain = [0] * 100
-        self.__origin_reg = re.compile('#+\s([一-十]+\.|[\d\.]+\d+)\s')
-        self.__contents_reg = re.compile('#+\s?')
+        self.__content_names = {}
+        self.__index_chain = [0] * 20
         self.__mark_reg = re.compile('')
+        self.__table_contents = ['## 目录']
+        self.__contents_reg = re.compile('#+\s?')
+        self.__origin_reg = re.compile('#+\s([一-十]+\.|[\d\.]+\d+)\s')
 
     def __sub_index(self, index):
         return '.'.join(str(self.__index_chain[i]) for i in range(2, index + 1))
@@ -34,13 +35,13 @@ class OrderNumber:
         self.__index_chain[index] += 1
         return index
 
-    def __generate_index(self, index: int) -> str:
+    def __generate_index(self, line: str, index: int) -> str:
         if index == 1:
-            return ''
+            return line
         index = self.__reset_chain_index(index)
         index_tag = f'{self.__ntc.get_number_chinese(self.__index_chain[2])}.' if index == 2 else self.__sub_index(
             index)
-        return '#' * index + ' ' + index_tag + ' '
+        return self.__add_index('#' * index + ' ' + index_tag + ' ', line, index)
 
     @staticmethod
     def __get_index(line: str) -> int:
@@ -52,24 +53,32 @@ class OrderNumber:
                 break
         return index
 
-    def __replace_index(self, index_tag: str, line: str) -> str:
-        return (self.__origin_reg if self.__origin_reg.match(line) else self.__contents_reg).sub(index_tag, line,
+    def __get_suffix(self, tag: str):
+        # 同名标题
+        times = self.__content_names.get(tag, 0)
+        if times > 0:
+            self.__content_names[tag] = times + 1
+            return '-' + times
+        else:
+            self.__content_names[tag] = 1
+            return ''
+
+    def __add_index(self, index_tag: str, line: str, index) -> str:
+        line = (self.__origin_reg if self.__origin_reg.match(line) else self.__contents_reg).sub(index_tag, line,
                                                                                                  count=0)
+        tag = line[index + 1:]
+        blank = ' ' * (index - 1) * 2
+        self.__table_contents.append(f'{blank}- [{tag}](#{tag.replace(" ", "-")}{self.__get_suffix(tag)})')
+        return line
 
-    def __add_index_to_contents(self, line: str) -> str:
-        index = self.__get_index(line)
-        if not index:
-            return line
-        tag = self.__generate_index(index)
-        return tag
-
-    def __add_order_number(self, line: str) -> str:
+    def __handle_line(self, line: str) -> str:
         # 清洗内容
-        line = self.__clear.main(line)
-        if line:
+        if line := self.__clear.main(line):
             # 代码区直接返回内容
-            return (line if self.__clear.code_zone else (
-                self.__replace_index(tag, line) if (tag := self.__add_index_to_contents(line)) else line)) + '\n'
+            if not self.__clear.code_zone:
+                if index := self.__get_index(line):
+                    line = self.__generate_index(line, index)
+            return line + '\n'
 
     @staticmethod
     def __new_file_path(filepath: str) -> str:
@@ -77,24 +86,27 @@ class OrderNumber:
         return tmp[0] + str(int(time.time())) + tmp[1]
 
     @_logger.decorator('markdown, 执行错误')
-    def main(self, filepath: str, inplace=False) -> bool:
+    def main(self, filepath: str, inplace=False, contents=False) -> bool:
         if not os.path.exists(filepath):
             print('invalid filepath')
             return False
         new_contents = []
         with open(filepath, mode='r+', encoding='utf-8') as f:
             for line in f.readlines():
-                if new_line := self.__add_order_number(line):
+                if new_line := self.__handle_line(line):
                     new_contents.append(new_line)
                 elif self.__clear.need_insert_blank:
                     new_contents.append('\n')
-            if inplace:
-                f.seek(0)
-                f.truncate()
-                f.write(''.join(new_contents))
-            elif new_contents:
-                new_file = self.__new_file_path(filepath)
-                with open(new_file, encoding='utf-8', mode='w') as f2:
-                    f2.write(''.join(new_contents))
-        print('finish')
+            if new_contents:
+                if contents and self.__table_contents:
+                    new_contents.insert(1, '\n' + '\n'.join(self.__table_contents) + '\n')
+                if inplace:
+                    f.seek(0)
+                    f.truncate()
+                    f.write(''.join(new_contents))
+                else:
+                    new_file = self.__new_file_path(filepath)
+                    with open(new_file, encoding='utf-8', mode='w') as f2:
+                        f2.write(''.join(new_contents))
+        print('markdown typesetting finish')
         return True
