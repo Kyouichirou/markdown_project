@@ -71,9 +71,9 @@ class OrderNumber:
         self.__table_contents.append(f'{blank}- [{tag}](#{tag.replace(" ", "-")}{self.__get_suffix(tag)})')
         return line
 
-    def __handle_line(self, line: str) -> str:
+    def __handle_line(self, line: str, line_number: int) -> str:
         # 清洗内容
-        if line := self.__clear.main(line):
+        if line := self.__clear.main(line, line_number):
             # 代码区直接返回内容
             if not self.__clear.code_zone:
                 if index := self.__get_index(line):
@@ -92,21 +92,26 @@ class OrderNumber:
             return False
         new_contents = []
         with open(filepath, mode='r+', encoding='utf-8') as f:
+            line_number = 1
             for line in f.readlines():
-                if new_line := self.__handle_line(line):
+                if new_line := self.__handle_line(line, line_number):
                     new_contents.append(new_line)
                 elif self.__clear.need_insert_blank:
                     new_contents.append('\n')
+                line_number += 1
             if new_contents:
                 if contents and self.__table_contents:
                     new_contents.insert(1, '\n' + '\n'.join(self.__table_contents) + '\n')
                 if inplace:
+                    # 需要先将指针移回起始位置
                     f.seek(0)
+                    # 假如不移动, 直接f.truncate(0), 内容被清理, 但是出现一些异常的字符
                     f.truncate()
                     f.write(''.join(new_contents))
                 else:
                     new_file = self.__new_file_path(filepath)
                     with open(new_file, encoding='utf-8', mode='w') as f2:
                         f2.write(''.join(new_contents))
+                self.__clear.check_code_close()
         print('markdown typesetting finish')
         return True
