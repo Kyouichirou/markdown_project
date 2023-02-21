@@ -44,12 +44,15 @@ class OrderNumber:
         return self.__add_index('#' * index + ' ' + index_tag + ' ', line, index)
 
     @staticmethod
-    def __get_index(line: str) -> int:
+    def __get_index(line: str, line_number: int) -> int:
         index = 0
         for c in line:
             if c == '#':
                 index += 1
             else:
+                # 假如不存在空格就提示 ##abc ## abc
+                if c != ' ':
+                    _logger.debug(f'{line_number} row, ## format has a problem')
                 break
         return index
 
@@ -76,7 +79,7 @@ class OrderNumber:
         if line := self.__clear.main(line, line_number):
             # 代码区直接返回内容
             if not self.__clear.code_zone:
-                if index := self.__get_index(line):
+                if index := self.__get_index(line, line_number):
                     line = self.__generate_index(line, index)
             return line + '\n'
 
