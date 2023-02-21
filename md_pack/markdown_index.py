@@ -51,6 +51,7 @@ class OrderNumber:
                 index += 1
             else:
                 # 假如不存在空格就提示 ##abc ## abc
+                # 假如下一不为空格, 就认为可能是遗漏了
                 if index > 0 and c != ' ':
                     _logger.debug(f'{line_number} row, ## format has a problem')
                 break
