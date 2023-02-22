@@ -31,7 +31,7 @@ class Clear:
         self.__code_last = 0
         self.__math_first = 0
         self.__math_last = 0
-        self.__zero_character = chr(8023)
+        self.__zero_character = chr(8203)
         self.__need_insert = False
         with open(os.path.dirname(__file__) + '\punctuation_mark.txt', mode='r', encoding='utf-8') as f:
             for line in f.readlines():
