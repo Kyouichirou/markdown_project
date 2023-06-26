@@ -20,7 +20,7 @@ class OrderNumber:
         self.__mark_reg = re.compile('')
         self.__table_contents = ['## 目录']
         self.__contents_reg = re.compile('#+\s?')
-        self.__origin_reg = re.compile('#+\s([一-十]+\.|[\d\.]+\d+)\s')
+        self.__origin_reg = re.compile('#+\s([一-十四]+\s?\.|[\d\.]+\d+)\s?')
 
     def __sub_index(self, index):
         return '.'.join(str(self.__index_chain[i]) for i in range(2, index + 1))
@@ -68,6 +68,7 @@ class OrderNumber:
             return ''
 
     def __add_index(self, index_tag: str, line: str, index) -> str:
+        x = line
         line = (self.__origin_reg if self.__origin_reg.match(line) else self.__contents_reg).sub(index_tag, line,
                                                                                                  count=0)
         tag = line[index + 1:]

@@ -2,6 +2,7 @@ __all__ = ['Clear']
 
 import os
 import re
+from .base64_module import convert
 from .utils.log_module import Logs
 
 _logger = Logs()
@@ -21,8 +22,10 @@ class Clear:
         self.__data = []
         self.__code_flag = False
         self.__list_flag = False
-        self.__blank_reg = re.compile('\s{2,}')
+        self.__blank_reg = re.compile('\w+(?=\))')
         self.__url_pic_reg = re.compile('\!?\[.+\]\(.+\)')
+        self.__local_pic_reg = re.compile('[a-z]+:\\\.+(?=\))', re.I)
+        self.__sub_pic_reg = re.compile('\[.+\]:data:image\/')
         self.__list_mark = ('* ', '- ', '+ ')
         self.__blank_times = 0
         self.__code_mark = 0
@@ -40,7 +43,7 @@ class Clear:
     def __zh_to_en_convertor(self, line: str) -> str:
         # 将中文符号转为英文符号
         for e in self.__data:
-            line = line.replace(e[0], e[1])
+            line = line.replace(e[0], e[1] + ' ')
         return line
 
     def __clear_tow_blank(self, line: str) -> str:
@@ -135,10 +138,23 @@ class Clear:
         # 清理掉隐藏的字符
         return line.replace(self.__zero_character, '')
 
+    def __check_local_pic(self, line: str) -> str:
+        # 检查本地的文件
+        if ms := self.__local_pic_reg.findall(line):
+            return convert(ms[0])
+        return ''
+
+    def __check_base64(self, line: str) -> bool:
+        return True if self.__sub_pic_reg.match(line) else False
+
     def main(self, line: str, line_number: int) -> str:
         self.__need_insert = False
         if strip_line := line.strip():
             self.__blank_times = 0
+            if local_pic := self.__check_local_pic(strip_line):
+                return local_pic
+            elif self.__check_base64(strip_line):
+                return strip_line
             return self.__zh_to_en_convertor(self.__clear_zero_character(line.rstrip())) if self.__check_code(
                 strip_line, line_number) or self.__check_tag_mark(strip_line) else self.__handle_list(line, strip_line)
         else:
