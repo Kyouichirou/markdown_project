@@ -1,4 +1,4 @@
-__all__ = ['convert']
+__all__ = ['convert', 'base64_template']
 
 import os
 import base64

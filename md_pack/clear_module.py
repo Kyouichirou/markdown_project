@@ -2,7 +2,7 @@ __all__ = ['Clear']
 
 import os
 import re
-from .base64_module import convert
+from .compress_pic_module import compress
 from .utils.log_module import Logs
 
 _logger = Logs()
@@ -38,7 +38,7 @@ class Clear:
         self.__need_insert = False
         with open(os.path.dirname(__file__) + '\punctuation_mark.txt', mode='r', encoding='utf-8') as f:
             for line in f.readlines():
-                self.__data.append(tuple(line.strip().split(',')))
+                self.__data.append(tuple(line.strip().split('|')))
 
     def __zh_to_en_convertor(self, line: str) -> str:
         # 将中文符号转为英文符号
@@ -141,7 +141,7 @@ class Clear:
     def __check_local_pic(self, line: str) -> str:
         # 检查本地的文件
         if ms := self.__local_pic_reg.findall(line):
-            return convert(ms[0])
+            return compress(ms[0])
         return ''
 
     def __check_base64(self, line: str) -> bool:
