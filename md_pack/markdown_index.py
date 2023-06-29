@@ -12,14 +12,20 @@ _logger = Logs()
 
 class OrderNumber:
     def __init__(self) -> None:
+        # 将目录编号记录以中文形式书写
         self.__ntc = nTc()
         self.__last_index = 1
         self.__clear = Clear()
+        # 同名标题记录
         self.__content_names = {}
+        # 预先分配存储目录空间
         self.__index_chain = [0] * 20
-        self.__mark_reg = re.compile('')
+        # self.__mark_reg = re.compile('')
+        # 目录-序号信息存储, 假如插入目录, 则在标题下方插入目录
         self.__table_contents = ['## 目录']
+        # 标题
         self.__contents_reg = re.compile('#+\s?')
+        # 已经有序号的, 将这部分内容去掉, 重新编号
         self.__origin_reg = re.compile('#+\s([一-十四]+\s?\.|[\d\.]+\d+)\s?')
 
     def __sub_index(self, index):
@@ -45,6 +51,7 @@ class OrderNumber:
 
     @staticmethod
     def __get_index(line: str, line_number: int) -> int:
+        # 提取标题的等级
         index = 0
         for c in line:
             if c == '#':
@@ -68,7 +75,6 @@ class OrderNumber:
             return ''
 
     def __add_index(self, index_tag: str, line: str, index) -> str:
-        x = line
         line = (self.__origin_reg if self.__origin_reg.match(line) else self.__contents_reg).sub(index_tag, line,
                                                                                                  count=0)
         tag = line[index + 1:]
@@ -87,6 +93,7 @@ class OrderNumber:
 
     @staticmethod
     def __new_file_path(filepath: str) -> str:
+        # 生成新的文件路径
         tmp = os.path.splitext(filepath)
         return tmp[0] + str(int(time.time())) + tmp[1]
 

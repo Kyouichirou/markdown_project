@@ -7,6 +7,10 @@ from .utils.log_module import Logs
 
 _logger = Logs()
 
+'''
+采用正则的方式来判断, 而不是逐个判断, 快是快, 但是判断不是很准确
+'''
+
 
 class Clear:
     @property
@@ -22,18 +26,28 @@ class Clear:
         self.__data = []
         self.__code_flag = False
         self.__list_flag = False
-        self.__blank_reg = re.compile('\w+(?=\))')
+        self.__blank_reg = re.compile('\s{2,}')
+        # 检查图片
         self.__url_pic_reg = re.compile('\!?\[.+\]\(.+\)')
+        # 检查本地的图片
         self.__local_pic_reg = re.compile('[a-z]+:\\\.+(?=\))', re.I)
+        # 检查base64图片
         self.__sub_pic_reg = re.compile('\[.+\]:data:image\/')
+        # 检查是否为列表
         self.__list_mark = ('* ', '- ', '+ ')
+        # 检查是否以数字开始的列表
+        self.__list_reg = re.compile('\d+\.\s')
+        # 空行记录
         self.__blank_times = 0
+        # 代码块标记
         self.__code_mark = 0
+        # latex数学公式标记
         self.__math_mark = 0
         self.__code_first = 0
         self.__code_last = 0
         self.__math_first = 0
         self.__math_last = 0
+        # 零宽字符
         self.__zero_character = chr(8203)
         self.__need_insert = False
         with open(os.path.dirname(__file__) + '\punctuation_mark.txt', mode='r', encoding='utf-8') as f:
@@ -48,7 +62,8 @@ class Clear:
 
     def __clear_tow_blank(self, line: str) -> str:
         # 剔除多空格（超过1） => 单空格
-        return self.__blank_reg.sub(self.__one_blank, line)
+        a = self.__blank_reg.sub(self.__one_blank, line)
+        return a
 
     def check_code_close(self) -> bool:
         # 检查代码区间是否闭合
@@ -118,8 +133,9 @@ class Clear:
 
     def __handle_list(self, line: str, strip_line: str):
         # 有标记的
-        # 无标记的
-        mode = any(strip_line.startswith(e) for e in self.__list_mark)
+        # 无标记的, 即在列表之下的内容
+        # 有序(数字类)序号
+        mode = any(strip_line.startswith(e) for e in self.__list_mark) or self.__list_reg.match(strip_line)
         if mode or self.__list_flag:
             ic = 0
             for e in line:
@@ -139,12 +155,13 @@ class Clear:
         return line.replace(self.__zero_character, '')
 
     def __check_local_pic(self, line: str) -> str:
-        # 检查本地的文件
+        # 检查是否为本地图片连接
         if ms := self.__local_pic_reg.findall(line):
             return compress(ms[0])
         return ''
 
     def __check_base64(self, line: str) -> bool:
+        # 检查是否为base64的注脚
         return True if self.__sub_pic_reg.match(line) else False
 
     def main(self, line: str, line_number: int) -> str:
@@ -155,6 +172,10 @@ class Clear:
                 return local_pic
             elif self.__check_base64(strip_line):
                 return strip_line
+            # 判断是否为代码区块
+            # 是否为html tag
+            # 假如不是, 则检查是否为列表区块
+            # 列表的区块判断比较麻烦
             return self.__zh_to_en_convertor(self.__clear_zero_character(line.rstrip())) if self.__check_code(
                 strip_line, line_number) or self.__check_tag_mark(strip_line) else self.__handle_list(line, strip_line)
         else:
