@@ -156,8 +156,9 @@ class Clear:
 
     def __check_local_pic(self, line: str) -> str:
         # 检查是否为本地图片连接
-        if ms := self.__local_pic_reg.findall(line):
-            return compress(ms[0])
+        if line.startswith('![') and line.endswith(')'):
+            if ms := self.__local_pic_reg.findall(line):
+                return compress(ms[0])
         return ''
 
     def __check_base64(self, line: str) -> bool:
